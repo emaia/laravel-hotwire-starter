@@ -17,7 +17,7 @@ For a local build, choose an empty or nonexistent destination. After `build` fin
 
 If a GitHub CI archive is available, you can extract it and run first-time setup from its `app/` directory instead. Neither the archive nor the generated app requires Python to run.
 
-Once the package is published, use the [Laravel installer](https://laravel.com/docs/13.x/starter-kits#community-maintained-starter-kits) with PHP 8.4 or later and Composer on your host machine:
+To install the [Packagist package](https://packagist.org/packages/emaia/laravel-hotwire-starter), use the [Laravel installer](https://laravel.com/docs/13.x/starter-kits#community-maintained-starter-kits) with PHP 8.4 or later and Composer on your host machine:
 
 ```sh
 composer global require laravel/installer
@@ -26,6 +26,15 @@ cd my-app
 ```
 
 Before running setup, check the new app's `.env` and `.env.example`: the installer may set `DB_CONNECTION=sqlite` and comment out `DB_PASSWORD`. To use PostgreSQL in Docker, set `DB_CONNECTION=pgsql` and make sure `DB_PASSWORD` is uncommented and set in both files. Bun installs the frontend dependencies in the container, and Laravel Boost is already included.
+
+## Update or adopt Hotwire in an existing app
+
+Like the [official Laravel starter kits](https://laravel.com/docs/13.x/starter-kits#how-do-i-upgrade), this kit copies application code into a new project. Your app owns that code. `composer update` can upgrade installed packages such as Laravel, Fortify, and `emaia/laravel-hotwire` within their constraints, but it does not update copied layouts, routes, migrations, or Docker files.
+
+- **Apps created from this kit:** Note which starter release you used. Compare it with a later [distribution release](https://github.com/emaia/laravel-hotwire-starter/releases) and bring over the changes you need in a branch. Review and test the changes against your app before merging.
+- **Existing Laravel apps:** Install [Laravel Hotwire](https://hotwire.emaia.dev/installation) as a dependency and use this starter as an example. Add features incrementally; do not install the whole starter over an existing app or replace its authentication, migrations, or `.env`.
+
+New apps include the full set of Laravel Hotwire frontend dependencies so every component is ready to use. Once you know which components your app needs, you can narrow the dependency selection with the [Hotwire installer's dependency options](https://hotwire.emaia.dev/installation) and remove unused packages. Rebuild the assets and run `php artisan hotwire:check` after trimming.
 
 ## First-time setup
 
@@ -93,6 +102,7 @@ After `bootstrap`, Docker, Vite, and your editor work from the project root. Git
 
 - **Laravel skeleton:** Review [upstream tags](https://github.com/laravel/laravel/tags) and update `tools/starter/upstream.json` with the tag, full commit, and SHA-256 of `https://codeload.github.com/laravel/laravel/tar.gz/<commit>`. Keep `omit` for upstream files that should not be shipped. Rerun `bootstrap`; it updates unchanged generated files but stops before overwriting local edits. To customize a generated file, edit it and use `git add -f <path>` to make it part of the overlay. `composer update` does not update these skeleton files.
 - **Laravel Hotwire:** Update the Composer package and lockfile, then run `php artisan hotwire:check` in the app container. If it reports loader drift, review the output of `php artisan hotwire:check --fix`, reconcile any changed frontend dependencies, and rebuild with Bun. The standard `composer check` includes the Hotwire check.
+- **Frontend dependencies:** Follow the Hotwire installer and controller catalog for dependency versions it manages. Update them alongside the Hotwire package, not as isolated routine bumps. Dependabot still monitors starter-owned tooling and can propose security fixes for Hotwire-managed dependencies; review those with the upstream package.
 - **Container updates:** Dependabot checks Docker images each weekday. The Server Side Up image is pinned by digest on the PHP 8.4 / FrankenPHP / Alpine 3.24 channel so it can propose rebuilds on the same tag. The source repository also checks that digest daily, independently of Dependabot. CI builds and tests the proposed image; updates are not merged or deployed automatically.
 
 For Packagist, publish the assembled app from a distribution repository. Do not register the overlay-only source repository as the installable package.

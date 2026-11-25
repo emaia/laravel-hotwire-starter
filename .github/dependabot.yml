@@ -12,6 +12,27 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Follow the Laravel Hotwire installer and controller catalog for these packages.
+    # Ignore routine version bumps only; keep Dependabot security updates eligible.
+    ignore:
+      - dependency-name: '@emaia/stimulus-lazy-loader'
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: '@floating-ui/dom'
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: '@hotwired/stimulus'
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: '@hotwired/turbo'
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: '@tiptap/*'
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: echarts
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: embla-carousel
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: leaflet
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
+      - dependency-name: maska
+        update-types: ['version-update:semver-patch', 'version-update:semver-minor', 'version-update:semver-major']
   - package-ecosystem: docker
     directory: /
     schedule:
