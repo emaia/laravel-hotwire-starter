@@ -1,4 +1,4 @@
-FROM serversideup/php:8.4-frankenphp-alpine3.24@sha256:5d507eb248221459956b293d6b1390cc9c0cd65576f625e589dc442d0b7dfc6d AS base
+FROM serversideup/php:8.6-frankenphp-alpine3.24@sha256:9eb7178d5c68307ca4f45a83cacf274047c75f3b15f1a6684ba5bf176d51571c AS base
 
 USER root
 
