@@ -1,0 +1,45 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "packageManager": "bun@1.4.2",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "test": "bun test --isolate",
+        "test:watch": "bun test --watch --isolate",
+        "test:browser": "playwright test",
+        "check": "bun run format:check && bun run test",
+        "format": "prettier --write resources tests/Js tests/Browser lang/*.json vite.config.js playwright.config.js",
+        "format:check": "prettier --check resources tests/Js tests/Browser lang/*.json vite.config.js playwright.config.js"
+    },
+    "devDependencies": {
+        "@emaia/stimulus-lazy-loader": "^2.0.0",
+        "@floating-ui/dom": "^1.8.0",
+        "@hotwired/stimulus": "https://github.com/emaia/laravel-hotwire/releases/download/stimulus-f45f6138ea0e/hotwired-stimulus-f45f6138ea0e.tgz",
+        "@hotwired/turbo": "https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz",
+        "@playwright/test": "^1.65.0",
+        "@tailwindcss/vite": "^4.0.0",
+        "@tiptap/core": "3.31.3",
+        "@tiptap/extension-link": "3.31.3",
+        "@tiptap/extension-underline": "3.31.3",
+        "@tiptap/extensions": "3.31.3",
+        "@tiptap/pm": "3.31.3",
+        "@tiptap/starter-kit": "3.31.3",
+        "concurrently": "^10.0.3",
+        "echarts": "^6.1.0",
+        "embla-carousel": "^8.6.0",
+        "laravel-vite-plugin": "^3.1",
+        "leaflet": "^1.9.4",
+        "maska": "^3.2.0",
+        "playwright": "^1.65.0",
+        "prettier": "^3.10.1",
+        "prettier-plugin-blade": "^3.3.3",
+        "prettier-plugin-tailwindcss": "^0.8.1",
+        "tailwindcss": "^4.0.0",
+        "vite": "^8.0.0"
+    },
+    "optionalDependencies": {
+        "@laravel/multiplex": "^0.4.1"
+    }
+}

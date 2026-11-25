@@ -1,0 +1,33 @@
+{
+    auto_https disable_redirects
+}
+
+http://{$APP_HOST} {
+    redir https://{$APP_HOST}:{$HTTPS_PORT:443}{uri} permanent
+}
+
+https://{$APP_HOST} {
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        -Server
+    }
+
+    encode zstd gzip
+
+    @immutable path /build/*
+    header @immutable Cache-Control "public, max-age=31536000, immutable" {
+        defer
+    }
+
+    log {
+        output file /var/log/caddy/app.log {
+            roll_size 50mb
+            roll_keep 3
+        }
+    }
+
+    reverse_proxy app:8080
+}

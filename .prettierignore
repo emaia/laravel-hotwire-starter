@@ -1,0 +1,18 @@
+node_modules/
+vendor/
+public/
+storage/
+bootstrap/cache/
+.env*
+.git/
+.agents/
+.claude/
+.codex/
+# Pint owns formatting for Blade templates.
+*.blade.php
+# The Hotwire package verifies this generated file byte for byte.
+resources/js/controllers/index.js
+bun.lock
+composer.lock
+test-results/
+playwright-report/

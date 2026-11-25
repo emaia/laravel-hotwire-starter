@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Build the distributable app from the starter source
+        if: ${{ hashFiles('tools/starter/build.py') != '' }}
+        id: starter
+        run: |
+          python3 -B -m unittest discover -s tools/starter
+          python3 tools/starter/build.py build .starter/app
+          tar -C .starter -czf .starter/hotwire-starter.tar.gz app
+          echo 'directory=.starter/app' >> "$GITHUB_OUTPUT"
+
+      - name: Build the development runtime
+        working-directory: ${{ steps.starter.outputs.directory || '.' }}
+        run: >-
+          docker build --target dev --tag hotwire-starter:ci
+          --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" .
+
+      - name: Build assets and run checks in the application image
+        working-directory: ${{ steps.starter.outputs.directory || '.' }}
+        run: |
+          docker run --rm -v "$PWD:/var/www/html" \
+            -e APP_ENV=testing \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            hotwire-starter:ci sh -ec '
+              [ -f .env ] || cp .env.example .env
+              composer install --no-interaction --prefer-dist
+              bun install --frozen-lockfile --ignore-scripts
+              bun run build
+              composer check
+              pg_dump --version
+              git --version
+            '
+
+      - name: Upload the tested starter archive
+        if: ${{ steps.starter.outputs.directory != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: hotwire-starter
+          path: .starter/hotwire-starter.tar.gz
+          if-no-files-found: error
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Validate development Compose
+        run: docker compose --env-file .env.example config --quiet
+
+      - name: Validate production Compose
+        run: docker compose --env-file .env.example -f compose.prod.yaml config --quiet
+
+      - name: Validate development proxy
+        run: >-
+          docker run --rm --network none
+          -e APP_HOST=hotwire-starter.localhost -e HTTPS_PORT=8443
+          -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro"
+          caddy:2.11.2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: Validate production proxy
+        run: >-
+          docker run --rm --network none
+          -e APP_HOST=hotwire-starter.example.com -e HTTPS_PORT=443
+          -v "$PWD/docker/Caddyfile.prod:/etc/caddy/Caddyfile:ro"
+          caddy:2.11.2-alpine caddy validate --config /etc/caddy/Caddyfile

@@ -1,0 +1,27 @@
+{
+    "agents": [
+        "claude_code",
+        "codex",
+        "opencode",
+        "zed"
+    ],
+    "cloud": false,
+    "guidelines": false,
+    "mcp": true,
+    "nightwatch": false,
+    "packages": [
+        "emaia/laravel-hotwire"
+    ],
+    "sail": false,
+    "skills": [
+        "infer-conventions",
+        "fortify-development",
+        "laravel-best-practices",
+        "testing-best-practices",
+        "tailwindcss-development",
+        "laravel-hotwire-forms",
+        "laravel-hotwire-stimulus-controllers",
+        "laravel-hotwire-turbo-workflows",
+        "laravel-hotwire-ui-development"
+    ]
+}

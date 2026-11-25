@@ -1,0 +1,28 @@
+{
+    auto_https disable_redirects
+}
+
+http://{$APP_HOST:hotwire-starter.localhost} {
+    redir https://{$APP_HOST:hotwire-starter.localhost}:{$HTTPS_PORT:8443}{uri} permanent
+}
+
+https://{$APP_HOST:hotwire-starter.localhost} {
+    @hmr {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    handle @hmr {
+        reverse_proxy app:5173
+    }
+
+    @vite {
+        path /@vite/* /@fs/* /@id/* /__laravel_vite_plugin__/* /resources/* /node_modules/* /vendor/emaia/laravel-hotwire/resources/js/controllers/*
+    }
+    handle @vite {
+        reverse_proxy app:5173
+    }
+
+    handle {
+        reverse_proxy app:8080
+    }
+}
