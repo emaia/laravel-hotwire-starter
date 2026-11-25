@@ -1,44 +1,20 @@
 # Hotwire Starter
 
-A starter kit for Laravel 13 with PHP 8.4, Blade, Tailwind CSS, and [Hotwire](https://hotwire.emaia.dev) (Turbo and Stimulus). It includes registration, email verification, password reset, two-factor authentication, and a dashboard with account settings. The default interface language is Brazilian Portuguese.
+A Laravel 13 starter with [Hotwire](https://hotwire.emaia.dev) (Turbo and Stimulus), Blade, Tailwind CSS, and Fortify authentication with email verification and two-factor authentication. The default UI language is Brazilian Portuguese.
 
-## Choose your workflow
+## Quick start
 
-From the root of a Git clone of the starter, use one of these commands (requires Python 3.10+):
-
-| Goal                       | Command                                          | Result                                                       |
-| -------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
-| Create a new app           | `python3 tools/starter/build.py build ../my-app` | Creates a complete, independent app in `../my-app`.          |
-| Work on the starter itself | `python3 tools/starter/build.py bootstrap`       | Restores the upstream Laravel files in the current checkout. |
-
-## Create an app from the starter kit
-
-For a local build, choose an empty or nonexistent destination. After `build` finishes, switch to the new directory (`cd ../my-app`) and follow [first-time setup](#first-time-setup). You do not need to run `bootstrap`.
-
-If a GitHub CI archive is available, you can extract it and run first-time setup from its `app/` directory instead. Neither the archive nor the generated app requires Python to run.
-
-To install the [Packagist package](https://packagist.org/packages/emaia/laravel-hotwire-starter), use the [Laravel installer](https://laravel.com/docs/13.x/starter-kits#community-maintained-starter-kits) with PHP 8.4 or later and Composer on your host machine:
+Requires Docker with Compose v2. No host PHP or Composer is needed. From the directory where you want to create `my-app`, run:
 
 ```sh
-composer global require laravel/installer
-laravel new my-app --using=emaia/laravel-hotwire-starter --no-node --no-boost --no-interaction
-cd my-app
+docker run --rm --user "$(id -u):$(id -g)" -e COMPOSER_HOME=/tmp/composer \
+  -v "$PWD:/app" -w /app composer:2 \
+  create-project emaia/laravel-hotwire-starter my-app --no-install --no-scripts
 ```
 
-Before running setup, check the new app's `.env` and `.env.example`: the installer may set `DB_CONNECTION=sqlite` and comment out `DB_PASSWORD`. To use PostgreSQL in Docker, set `DB_CONNECTION=pgsql` and make sure `DB_PASSWORD` is uncommented and set in both files. Bun installs the frontend dependencies in the container, and Laravel Boost is already included.
+If you already have PHP and Composer on your host, you can run `composer create-project emaia/laravel-hotwire-starter my-app --no-install --no-scripts` instead.
 
-## Update or adopt Hotwire in an existing app
-
-Like the [official Laravel starter kits](https://laravel.com/docs/13.x/starter-kits#how-do-i-upgrade), this kit copies application code into a new project. Your app owns that code. `composer update` can upgrade installed packages such as Laravel, Fortify, and `emaia/laravel-hotwire` within their constraints, but it does not update copied layouts, routes, migrations, or Docker files.
-
-- **Apps created from this kit:** Note which starter release you used. Compare it with a later [distribution release](https://github.com/emaia/laravel-hotwire-starter/releases) and bring over the changes you need in a branch. Review and test the changes against your app before merging.
-- **Existing Laravel apps:** Install [Laravel Hotwire](https://hotwire.emaia.dev/installation) as a dependency and use this starter as an example. Add features incrementally; do not install the whole starter over an existing app or replace its authentication, migrations, or `.env`.
-
-New apps include the full set of Laravel Hotwire frontend dependencies so every component is ready to use. Once you know which components your app needs, you can narrow the dependency selection with the [Hotwire installer's dependency options](https://hotwire.emaia.dev/installation) and remove unused packages. Rebuild the assets and run `php artisan hotwire:check` after trimming.
-
-## First-time setup
-
-Requires Docker with Compose v2. From the project root, run:
+Both commands only download the starter. From `my-app`, create `.env` and start the app:
 
 ```sh
 [ -f .env ] || cp .env.example .env
@@ -46,63 +22,57 @@ docker compose run --rm --build app composer setup
 docker compose up -d --wait
 ```
 
-`composer setup` installs dependencies, generates the application key, runs migrations, and builds the assets. If the app is already set up, keep your `.env` and run `docker compose up -d --wait` instead.
+Setup generates the app key, runs PostgreSQL migrations, and builds the assets with Bun. On later starts, run only `docker compose up -d --wait`.
 
-- **App:** [hotwire-starter.localhost:8443](https://hotwire-starter.localhost:8443/)
-- **Local email:** [Mailpit](http://localhost:18025/)
-- **PostgreSQL:** `127.0.0.1:15432` from the host; `db:5432` from the containers.
+- **App:** [https://hotwire-starter.localhost:8443](https://hotwire-starter.localhost:8443/)
+- **Email:** [Mailpit](http://localhost:18025/)
+- **PostgreSQL:** `127.0.0.1:15432` from the host, or `db:5432` from the containers.
 
 If your browser does not trust local HTTPS, Caddy's root certificate is at `/data/caddy/pki/authorities/local/root.crt` in the `proxy` container.
 
-## Change the local URL
+## Configure your app
 
-Edit `.env` in the project root. Set `APP_HOST` to the hostname only (for Caddy) and `APP_URL` to the full URL (for Laravel and Vite):
+Set `APP_NAME` and `APP_LOCALE` in `.env` to change the app name and language. For a custom local address, set `APP_HOST` to the hostname and `APP_URL` to the full URL. Match `HTTPS_PORT` to the port in `APP_URL`. No changes to Vite or Caddy are needed.
 
 ```dotenv
 APP_HOST=my-app.localhost
-APP_URL=https://my-app.localhost:8443
-HTTPS_PORT=8443
+APP_URL=https://my-app.localhost:9443
+HTTPS_PORT=9443
 ```
 
-If you change the HTTPS port, update both `APP_URL` and `HTTPS_PORT`. Update `.env.example` too if you want to share the new defaults. No changes to the Caddyfile or `vite.config.js` are needed: the Vite dev server reads `APP_URL` for its public origin and hot reload. Building the assets does not require `APP_URL`.
+When running multiple apps, also use different `HTTP_PORT`, `FORWARD_DB_PORT`, and `FORWARD_MAIL_PORT` values. Run `docker compose up -d --wait` after editing `.env`, and restart Vite if it is running. The example database password and Mailpit are for local development only.
 
-If the stack is already running, run `docker compose up -d --wait` to apply the changes and restart Vite if it is running. To run multiple projects at once, give each project distinct `HTTP_PORT`, `HTTPS_PORT`, `FORWARD_DB_PORT`, and `FORWARD_MAIL_PORT` values.
+## Develop
 
-## Development
+| Command                                          | Purpose                                   |
+| ------------------------------------------------ | ----------------------------------------- |
+| `docker compose exec app bun run dev`            | Start Vite with hot reload.               |
+| `docker compose exec app bun run build`          | Build assets without the Vite dev server. |
+| `docker compose exec app composer format`        | Format PHP, Blade, and frontend files.    |
+| `docker compose exec app composer check`         | Run linting, static analysis, and tests.  |
+| `docker compose exec -T app composer boost:sync` | Sync Laravel Boost agent skills.          |
 
-- `docker compose exec app bun run dev` — start Vite with hot reload.
-- `docker compose exec app bun run build` — build assets to serve without the Vite dev server.
-- `docker compose exec app php artisan migrate` — apply new migrations.
-- `docker compose exec app composer format` — format PHP and Blade with Pint, and frontend files with Prettier.
-- `docker compose exec app composer check` — run linting, static analysis, PHP and JavaScript tests, and formatting checks.
+If Vite has stopped but Laravel still tries to use it, remove the generated `public/hot` file. The included MCP configuration runs Laravel Boost in the `app` container; start Compose before connecting.
 
-If Laravel still tries to load assets from Vite after the dev server has stopped, remove the generated `public/hot` file to switch back to the built assets.
+## Optimize when you need to
 
-## Laravel Boost
+New apps include all Hotwire frontend dependencies so you can use every component out of the box. Once you know which components you need, use the [Hotwire installer's dependency options](https://hotwire.emaia.dev/installation) to narrow controller loading, then remove unused packages, rebuild the assets, and run `php artisan hotwire:check` in the app container.
 
-To install or refresh the local agent skills, including Laravel Hotwire, run this after first-time setup:
+## Maintain your app
 
-```sh
-docker compose exec -T app composer boost:sync
-```
+The starter copies code into your app. Composer updates installed packages, not the copied routes, layouts, migrations, or Docker files. To adopt a starter change, compare [distribution releases](https://github.com/emaia/laravel-hotwire-starter/releases) and apply what fits your app.
 
-The generated skill copies are not tracked in Git. `boost.json` controls the package selection; `AGENTS.md` holds the starter's own instructions. With the default configuration, syncing leaves the project instructions and MCP configuration unchanged. If you add a custom skill, keep its source in `.ai/skills/`.
+Review dependency and Docker image updates in a branch and run `composer check` before merging. Keep your `.env` and app key; do not rerun `composer setup` on an existing app.
 
-Both `.mcp.json` and `opencode.json` run Laravel Boost in the `app` container. Start the Compose stack before connecting your MCP client. To configure Codex (`.codex/config.toml`) or Zed (`.zed/settings.json`) locally, use:
+Already have a Laravel app? [Install Laravel Hotwire](https://hotwire.emaia.dev/installation) rather than overlaying the starter.
 
-```sh
-docker compose exec -T app php artisan boost:mcp
-```
+### Work on the starter source
 
-You do not need to run `boost:install --mcp` for clients that are already configured. If you rerun it, check the client configuration: the Boost installer can overwrite the command and switch it back to PHP on the host.
+In a clone of [`laravel-hotwire-starter-source`](https://github.com/emaia/laravel-hotwire-starter-source), use Git and Python 3.10+:
 
-## Maintaining the starter source
+| Goal                                                 | Command                                          |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| Restore the pinned Laravel skeleton in this checkout | `python3 tools/starter/build.py bootstrap`       |
+| Assemble an independent app in a new directory       | `python3 tools/starter/build.py build ../my-app` |
 
-After `bootstrap`, Docker, Vite, and your editor work from the project root. Git ignores the restored Laravel files locally.
-
-- **Laravel skeleton:** Review [upstream tags](https://github.com/laravel/laravel/tags) and update `tools/starter/upstream.json` with the tag, full commit, and SHA-256 of `https://codeload.github.com/laravel/laravel/tar.gz/<commit>`. Keep `omit` for upstream files that should not be shipped. Rerun `bootstrap`; it updates unchanged generated files but stops before overwriting local edits. To customize a generated file, edit it and use `git add -f <path>` to make it part of the overlay. `composer update` does not update these skeleton files.
-- **Laravel Hotwire:** Update the Composer package and lockfile, then run `php artisan hotwire:check` in the app container. If it reports loader drift, review the output of `php artisan hotwire:check --fix`, reconcile any changed frontend dependencies, and rebuild with Bun. The standard `composer check` includes the Hotwire check.
-- **Frontend dependencies:** Follow the Hotwire installer and controller catalog for dependency versions it manages. Update them alongside the Hotwire package, not as isolated routine bumps. Dependabot still monitors starter-owned tooling and can propose security fixes for Hotwire-managed dependencies; review those with the upstream package.
-- **Container updates:** Dependabot checks Docker images each weekday. The Server Side Up image is pinned by digest on the PHP 8.4 / FrankenPHP / Alpine 3.24 channel so it can propose rebuilds on the same tag. The source repository also checks that digest daily, independently of Dependabot. CI builds and tests the proposed image; updates are not merged or deployed automatically.
-
-For Packagist, publish the assembled app from a distribution repository. Do not register the overlay-only source repository as the installable package.
+The Laravel skeleton pin is in `tools/starter/upstream.json`. Update Hotwire-managed frontend dependencies alongside the Hotwire package, not as isolated version bumps.

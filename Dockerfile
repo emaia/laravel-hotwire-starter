@@ -23,7 +23,7 @@ RUN apk add --no-cache git nodejs postgresql18-client
 USER www-data
 
 # Chromium needs glibc; keep browser tooling outside the Alpine application image.
-FROM node:24-bookworm-slim AS browser
+FROM node:26-bookworm-slim AS browser
 
 COPY --from=oven/bun:1.4.2 /usr/local/bin/bun /usr/local/bin/bun
 
