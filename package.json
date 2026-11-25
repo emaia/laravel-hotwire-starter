@@ -21,7 +21,7 @@
         "@playwright/test": "^1.65.0",
         "@tailwindcss/vite": "^4.0.0",
         "@tiptap/core": "3.31.3",
-        "@tiptap/extension-link": "3.31.3",
+        "@tiptap/extension-link": "3.35.0",
         "@tiptap/extension-underline": "3.31.3",
         "@tiptap/extensions": "3.31.3",
         "@tiptap/pm": "3.31.3",
