@@ -20,7 +20,7 @@
         "@hotwired/turbo": "https://github.com/emaia/laravel-hotwire/releases/download/turbo-5350970b085d/hotwired-turbo-5350970b085d.tgz",
         "@playwright/test": "^1.65.0",
         "@tailwindcss/vite": "^4.0.0",
-        "@tiptap/core": "3.31.3",
+        "@tiptap/core": "3.35.0",
         "@tiptap/extension-link": "3.31.3",
         "@tiptap/extension-underline": "3.31.3",
         "@tiptap/extensions": "3.31.3",
