@@ -18,11 +18,15 @@ Both commands only download the starter. From `my-app`, create `.env` and start 
 
 ```sh
 [ -f .env ] || cp .env.example .env
+grep -q '^UID=' .env || printf 'UID=%s\n' "$(id -u)" >> .env
+grep -q '^GID=' .env || printf 'GID=%s\n' "$(id -g)" >> .env
 docker compose run --rm --build app composer setup
 docker compose up -d --wait
 ```
 
 Setup generates the app key, runs PostgreSQL migrations, and builds the assets with Bun. On later starts, run only `docker compose up -d --wait`.
+
+Compose reads `UID` and `GID` from `.env` on each build so the container can write to the bind-mounted app on Linux. If you move the project to a different user or host, review these values before rebuilding.
 
 - **App:** [https://hotwire-starter.localhost:8443](https://hotwire-starter.localhost:8443/)
 - **Email:** [Mailpit](http://localhost:18025/)
@@ -54,6 +58,8 @@ When running multiple apps, also use different `HTTP_PORT`, `FORWARD_DB_PORT`, a
 
 If Vite has stopped but Laravel still tries to use it, remove the generated `public/hot` file. The included MCP configuration runs Laravel Boost in the `app` container; start Compose before connecting.
 
+`composer check` uses SQLite in memory by default. CI also runs the feature suite against PostgreSQL, including checks for account row locking, session revocation, and rate limiting backed by the database.
+
 ## Optimize when you need to
 
 New apps include all Hotwire frontend dependencies so you can use every component out of the box. Once you know which components you need, use the [Hotwire installer's dependency options](https://hotwire.emaia.dev/installation) to narrow controller loading, then remove unused packages, rebuild the assets, and run `php artisan hotwire:check` in the app container.
@@ -63,6 +69,8 @@ New apps include all Hotwire frontend dependencies so you can use every componen
 The starter copies code into your app. Composer updates installed packages, not the copied routes, layouts, migrations, or Docker files. To adopt a starter change, compare [distribution releases](https://github.com/emaia/laravel-hotwire-starter/releases) and apply what fits your app.
 
 Review dependency and Docker image updates in a branch and run `composer check` before merging. Keep your `.env` and app key; do not rerun `composer setup` on an existing app.
+
+`compose.prod.yaml` is a deployment starting point, not a self-contained production image. It bind-mounts the app, so prepare production Composer dependencies and built assets before starting it. Use a production `.env` with your real HTTPS URL, database and mail settings, and `SESSION_SECURE_COOKIE=true`.
 
 Already have a Laravel app? [Install Laravel Hotwire](https://hotwire.emaia.dev/installation) rather than overlaying the starter.
 

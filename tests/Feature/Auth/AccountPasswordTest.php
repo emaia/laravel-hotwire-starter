@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Fortify\UpdateUserPassword;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -75,6 +76,23 @@ test('an incorrect current password cannot change credentials', function (): voi
 
     expect($user->fresh()->password)->toBe($user->password);
     expect($user->fresh()->auth_version)->toBe(0);
+});
+
+test('changing a password validates the current password on the Fortify guard', function (): void {
+    config([
+        'auth.guards.account' => ['driver' => 'session', 'provider' => 'users'],
+        'fortify.guard' => 'account',
+    ]);
+    $user = User::factory()->create();
+    $this->actingAs($user, 'account');
+
+    app(UpdateUserPassword::class)->update($user, [
+        'current_password' => 'password',
+        'password' => 'Changed-password-123',
+        'password_confirmation' => 'Changed-password-123',
+    ]);
+
+    expect(Hash::check('Changed-password-123', $user->fresh()->password))->toBeTrue();
 });
 
 test('confirming the current password unlocks security settings', function (): void {

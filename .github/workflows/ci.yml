@@ -89,3 +89,71 @@ jobs:
           -e APP_HOST=hotwire-starter.example.com -e HTTPS_PORT=443
           -v "$PWD/docker/Caddyfile.prod:/etc/caddy/Caddyfile:ro"
           caddy:2.11.2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+  postgres:
+    name: PostgreSQL features
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.4-alpine3.24
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: starter_ci
+          POSTGRES_PASSWORD: starter_ci
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U starter_ci -d testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Assemble the app when testing the starter source
+        if: ${{ hashFiles('tools/starter/build.py') != '' }}
+        id: starter
+        run: |
+          python3 tools/starter/build.py build .starter/postgres-app
+          echo 'directory=.starter/postgres-app' >> "$GITHUB_OUTPUT"
+
+      - name: Build the test runtime
+        working-directory: ${{ steps.starter.outputs.directory || '.' }}
+        run: >-
+          docker build --target dev --tag hotwire-starter:postgres-ci
+          --build-arg USER_ID="$(id -u)" --build-arg GROUP_ID="$(id -g)" .
+
+      - name: Run the feature suite against PostgreSQL
+        working-directory: ${{ steps.starter.outputs.directory || '.' }}
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker run --rm --network "container:$POSTGRES_CONTAINER" -v "$PWD:/var/www/html" \
+            -e APP_ENV=testing \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            -e DB_CONNECTION=pgsql -e DB_HOST=127.0.0.1 -e DB_PORT=5432 \
+            -e DB_DATABASE=testing -e DB_USERNAME=starter_ci -e DB_PASSWORD=starter_ci \
+            -e CACHE_STORE=database -e SESSION_DRIVER=database \
+            hotwire-starter:postgres-ci sh -ec '
+              [ -f .env ] || cp .env.example .env
+              composer install --no-interaction --prefer-dist
+              bun install --frozen-lockfile --ignore-scripts
+              bun run build
+              composer test:ci
+            '
+
+  install:
+    name: Install the distribution ZIP
+    if: ${{ github.repository == 'emaia/laravel-hotwire-starter' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install and start the candidate package
+        run: bash .github/scripts/smoke-install.sh archive

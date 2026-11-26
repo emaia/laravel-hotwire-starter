@@ -6,7 +6,13 @@
     <hw:form :action="route('verification.send')" method="POST" frame="_top">
         <x-auth.submit-button :label="__('Resend verification email')" class="w-full" />
     </hw:form>
-    <hw:button as="a" :href="route('account.profile.edit')" variant="outline">{{ __('Correct my email') }}</hw:button>
+    @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updateProfileInformation()))
+        <hw:button
+            as="a"
+            :href="route('account.profile.edit')"
+            variant="outline"
+        >{{ __('Correct my email') }}</hw:button>
+    @endif
     <hw:form :action="route('logout')" method="POST" frame="_top">
         <x-auth.submit-button :label="__('Log out')" variant="ghost" class="w-full" />
     </hw:form>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -72,6 +73,49 @@ test('password reset shows an error for a missing hidden token without repeating
 test('account screens require authentication', function (string $route): void {
     $this->get(route($route))->assertRedirectToRoute('login');
 })->with(['dashboard', 'account.password.edit', 'two-factor.settings', 'two-factor.recovery']);
+
+test('password settings are unavailable when password updates are disabled', function (): void {
+    config(['fortify.features' => array_diff(config('fortify.features'), [Features::updatePasswords()])]);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('account.password.edit'))->assertNotFound();
+
+    $this->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('two-factor.settings'))->assertOk()->assertDontSee(route('account.password.edit'), false);
+});
+
+test('settings navigation only links to enabled account features', function (): void {
+    config(['fortify.features' => []]);
+    $user = User::factory()->create();
+    $this->actingAs($user)->get(route('dashboard'))->assertOk()
+        ->assertDontSee(route('account.profile.edit'), false)
+        ->assertDontSee(route('account.password.edit'), false)
+        ->assertDontSee(route('two-factor.settings'), false);
+
+    config(['fortify.features' => [Features::updatePasswords()]]);
+    $this->get(route('account.password.edit'))->assertOk()
+        ->assertDontSee(route('account.profile.edit'), false)
+        ->assertDontSee(route('two-factor.settings'), false);
+
+    config(['fortify.features' => [Features::updateProfileInformation()]]);
+    $this->get(route('account.profile.edit'))->assertOk()
+        ->assertDontSee(route('account.password.edit'), false)
+        ->assertDontSee(route('two-factor.settings'), false);
+});
+
+test('the verification notice does not link to a disabled profile page', function (): void {
+    config(['fortify.features' => array_diff(config('fortify.features'), [Features::updateProfileInformation()])]);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('verification.notice'))->assertOk()
+        ->assertDontSee(route('account.profile.edit'), false);
+});
+
+test('the login form only links to password reset when it is enabled', function (): void {
+    config(['fortify.features' => array_diff(config('fortify.features'), [Features::resetPasswords()])]);
+
+    $this->get(route('login'))->assertOk()->assertDontSee(route('password.request'), false);
+});
 
 test('secret material is visible only during pending setup', function (): void {
     $user = User::factory()->create();

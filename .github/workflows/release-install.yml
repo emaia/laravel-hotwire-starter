@@ -1,0 +1,64 @@
+name: Verify Packagist release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: GitHub release tag to verify (for example v0.1.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    if: ${{ github.repository == 'emaia/laravel-hotwire-starter' && (github.event_name == 'workflow_dispatch' || !github.event.release.prerelease) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Wait for the release to appear on Packagist
+        id: package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Expected a stable release tag such as v0.1.1."
+            exit 1
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease \
+            --jq 'select(.isDraft == false and .isPrerelease == false) | "published"' | grep -Fx published
+          package=emaia/laravel-hotwire-starter
+          index="$RUNNER_TEMP/packagist-index.json"
+          for attempt in {1..12}; do
+            status=$(curl --silent --show-error --max-time 10 --output "$index" --write-out '%{http_code}' \
+              "https://repo.packagist.org/p2/$package.json") || status=000
+            case "$status" in
+              200)
+                if jq -e --arg package "$package" --arg version "${TAG#v}.0" \
+                  '.packages[$package] | any(.version_normalized == $version)' "$index" >/dev/null; then
+                  echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+                  exit 0
+                fi
+                ;;
+              000|404|429|5??) ;;
+              *) echo "::error::Packagist index returned HTTP $status."; exit 1 ;;
+            esac
+            if [[ "$attempt" -lt 12 ]]; then sleep 10; fi
+          done
+          echo "::error::Could not confirm $TAG in the Packagist index (last HTTP status: $status). Check the Packagist sync and rerun this workflow. The app was not tested."
+          exit 1
+
+      - name: Install the exact release from Packagist
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: bash .github/scripts/smoke-install.sh packagist "$VERSION"

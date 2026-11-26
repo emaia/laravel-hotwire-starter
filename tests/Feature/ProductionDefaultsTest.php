@@ -64,8 +64,11 @@ test('compromised password checks are explicitly opt in and isolated from the ne
 });
 
 test('force does not bypass destructive command protection in production', function (string $command): void {
-    expect(config('database.default'))->toBe('sqlite');
-    expect(config('database.connections.sqlite.database'))->toBe(':memory:');
+    config([
+        'database.default' => 'sqlite',
+        'database.connections.sqlite.url' => null,
+        'database.connections.sqlite.database' => ':memory:',
+    ]);
     $this->app->detectEnvironment(fn (): string => 'production');
     (new AppServiceProvider($this->app))->boot();
 
