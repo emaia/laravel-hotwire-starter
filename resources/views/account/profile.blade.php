@@ -3,7 +3,7 @@
     :description="__('Keep your name and login email up to date.')"
     :inline-errors="['name', 'email', 'current_password']"
 >
-    @unless ($user->hasVerifiedEmail())
+    @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::emailVerification()) && ! $user->hasVerifiedEmail())
         <hw:alert>
             <hw:alert.title>{{ __('Your email is not verified yet.') }}</hw:alert.title>
             <hw:alert.description>
@@ -12,7 +12,7 @@
                 </hw:form>
             </hw:alert.description>
         </hw:alert>
-    @endunless
+    @endif
     <hw:form :action="route('user-profile-information.update')" method="PUT" frame="_top" error-focus error-scroll>
         <hw:field.group>
             <hw:field name="name" :label="__('Name')">

@@ -12,10 +12,12 @@
     :inline-errors="$inlineErrors"
 >
     <div class="flex flex-col gap-6" data-turbo-temporary>
-        <hw:button as="a" :href="route('account.password.edit')" variant="outline">
-            {{ __('Change password') }}
-        </hw:button>
-        <hw:separator />
+        @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
+            <hw:button as="a" :href="route('account.password.edit')" variant="outline">
+                {{ __('Change password') }}
+            </hw:button>
+            <hw:separator />
+        @endif
         @if ($user->two_factor_confirmed_at !== null)
             <section class="flex flex-col gap-4">
                 <h2 class="font-medium">{{ __('Two-factor authentication is enabled') }}</h2>

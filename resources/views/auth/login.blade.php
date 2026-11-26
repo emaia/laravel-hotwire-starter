@@ -11,9 +11,11 @@
             <hw:field name="password">
                 <div class="flex items-center justify-between gap-4">
                     <hw:field.label>{{ __('Password') }}</hw:field.label>
-                    <a href="{{ route('password.request') }}" class="text-sm underline-offset-4 hover:underline">
-                        {{ __('Forgot your password?') }}
-                    </a>
+                    @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::resetPasswords()))
+                        <a href="{{ route('password.request') }}" class="text-sm underline-offset-4 hover:underline">
+                            {{ __('Forgot your password?') }}
+                        </a>
+                    @endif
                 </div>
                 <hw:input type="password" autocomplete="current-password" :old="false" required />
             </hw:field>

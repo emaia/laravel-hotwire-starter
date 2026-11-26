@@ -104,7 +104,7 @@
                                         {{ __('Profile') }}
                                     </hw:dropdown.item>
                                 @endif
-                                @if (Route::has('user-password.update'))
+                                @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
                                     <hw:dropdown.item
                                         :href="route('account.password.edit')"
                                         frame="_top"

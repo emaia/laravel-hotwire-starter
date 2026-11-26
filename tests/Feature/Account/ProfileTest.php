@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use Laravel\Fortify\Features;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -17,7 +18,16 @@ test('guests cannot edit their profile', function (): void {
 test('the profile remains accessible before email verification', function (): void {
     $user = User::factory()->unverified()->create();
 
-    $this->actingAs($user)->get(route('account.profile.edit'))->assertOk();
+    $this->actingAs($user)->get(route('account.profile.edit'))->assertOk()
+        ->assertSee(route('verification.send'), false);
+});
+
+test('an unverified account can open its profile without a resend form when email verification is disabled', function (): void {
+    config(['fortify.features' => array_diff(config('fortify.features'), [Features::emailVerification()])]);
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->get(route('account.profile.edit'))->assertOk()
+        ->assertDontSee(route('verification.send'), false);
 });
 
 test('account security pages disable turbo prefetch', function (string $route): void {

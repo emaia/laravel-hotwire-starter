@@ -22,7 +22,7 @@ class UpdateUserPassword implements UpdatesUserPasswords
     {
         $this->credentials->change($user, function (User $current) use ($input): void {
             Validator::make($input, [
-                'current_password' => ['required', 'string', 'max:1024', 'current_password:web'],
+                'current_password' => ['required', 'string', 'max:1024', 'current_password:'.config('fortify.guard', 'web')],
                 'password' => $this->passwordRules(),
             ])->validate();
 

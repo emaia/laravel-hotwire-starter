@@ -1,0 +1,63 @@
+name: Browser sidecar
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - bun.lock
+      - .github/workflows/browser-sidecar.yml
+  pull_request:
+    paths:
+      - Dockerfile
+      - bun.lock
+      - .github/workflows/browser-sidecar.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Build the Playwright image
+        run: docker build --target browser --tag hotwire-starter:browser-ci .
+
+      - name: Connect to the sidecar and drive Chromium
+        run: |
+          set -euo pipefail
+          container=$(docker run --detach --network none --shm-size 1g hotwire-starter:browser-ci)
+          trap 'docker rm --force "$container" >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..30}; do
+            status=$(docker inspect --format '{{.State.Status}}:{{.State.Health.Status}}' "$container")
+            if [[ "$status" != running:starting ]]; then break; fi
+            sleep 2
+          done
+          if [[ "$status" != running:healthy ]]; then
+            echo "The browser sidecar did not become healthy ($status)." >&2
+            docker logs "$container"
+            exit 1
+          fi
+          docker exec -i "$container" node - <<'JS'
+          const assert = require('node:assert/strict');
+          const { chromium } = require('playwright');
+          (async () => {
+              const browser = await chromium.connect('ws://127.0.0.1:3000/', { timeout: 10_000 });
+              try {
+                  const page = await browser.newPage();
+                  await page.setContent('<button onclick="this.textContent = \'Done\'">Start</button>');
+                  await page.getByRole('button', { name: 'Start' }).click({ timeout: 10_000 });
+                  assert.equal(await page.getByRole('button').textContent(), 'Done');
+                  console.log(`Chromium ${browser.version()} passed the remote interaction check.`);
+              } finally {
+                  await browser.close();
+              }
+          })().catch((error) => { console.error(error); process.exitCode = 1; });
+          JS

@@ -1,9 +1,12 @@
 <?php
 
 use Dom\HTMLDocument;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
+
+uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     app()->setLocale('pt_BR');
